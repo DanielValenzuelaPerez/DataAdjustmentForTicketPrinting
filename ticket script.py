@@ -19,42 +19,65 @@ def format_line(text, max_width, prefix='', suffix=''):
 
 def format_items(items, width):
     str_cant = 'Cant  '
-    str_total = 'Total     '
+    str_total = 'Total   '
     str_articulo = 'Artículo'
     str_articulo += ''.join([' ' for _ in range(width - (len(str_articulo)+len(str_cant)+len(str_total)))])
     lines_list = list()
     lines_list.append(str_cant + str_articulo + str_total)
     for item in items:
         line = str(item['qty']) + ''.join([' ' for _ in range(len(str_cant) - len(str(item['qty'])))])
-        product_description = '. '.join([item['product'], item['model'], item['presentation']])
-        product_line_list = format_line(product_description, width - 2 - (len(str_cant)+len(str_total)))
-        line += ' '.join(product_line_list[0])
-        line += ''.join([' ' for _ in range((len(str_cant) + len(str_articulo)) - len(line))]) + '$ ' + item['price']
+        product = item['product']
+        model = item['model']
+        presentation = item['presentation']
+        line += product[:width - 1 - (len(str_cant)+len(str_total))]
+        line += ''.join([' ' for _ in range((len(str_cant) + len(str_articulo)) - len(line) + len(str_total) - len(item['price']))]) + item['price']
         lines_list.append(line)
-        for product_line in product_line_list[1:]:
-            lines_list.append(''.join([' ' for _ in range(len(str_cant))]) + ' '.join(product_line))
+
+        # Modelo / Presentación
+        len_articulo =  width - (len(str_cant)+len(str_total))
+        model_presentation = model[0:(len_articulo - 1)//2] + ' ' + presentation[0:(len_articulo - 1)//2]
+        model_presentation_formatted = format_line(model_presentation, width, ''.join([' ' for _ in range(len(str_cant))]))
+        lines_list.append(' '.join(model_presentation_formatted[0]))
     
     for line in lines_list:
         print(line)
 
+def format_payment(payment):
+    len_total = 8
+    str_total = 'Total M.N '
+    str_efectivo = 'Efectivo '
+    str_cambio = 'Cambio '
+    str_iva = '**Total de impuestos 16% '
+
+    str_total = str_total + ''.join([' ' for _ in range(len_total - len(payment['total']))]) + payment['total']
+    print(str_total)
+    str_efectivo = str_efectivo + ''.join([' ' for _ in range(len_total - len(payment['efectivo']))]) + payment['efectivo']
+    print(str_efectivo)
+    str_cambio =  str_cambio + ''.join([' ' for _ in range(len_total - len(payment['cambio']))]) + payment['cambio']
+    print(str_cambio)
+    str_iva = str_iva + ''.join([' ' for _ in range(len_total - len(payment['iva']))]) + payment['iva']
+    print(str_iva)
+
 def main():
     text = "Esta es una línea larga que debe dividirse en diferentes líneas, de las cuales cada una tiene un máximo de 40 caracteres."
-    width = 60
-    # format_line(text, width, '*', '-')
+    width = 40
+    lines_list = format_line(text, width, '*', '-')
+    for line in lines_list:
+        print(' '.join(line))
 
     items = [
         dict(
             qty=3,
-            product='El nombre del productoo iría aquí y puede ser un nombre largo',
-            model='Este sería el nombre del modelo del producto',
-            presentation='Este sería el nombre de la presentación del producto',
-            price="100.00"
+            product='Tenis Jordán Piratas',
+            model='Negro',
+            presentation='27 cm',
+            price="1000.00"
         ),
         dict(
             qty=2,
-            product='El nombre del segundo producto iría aquí y puede ser un nombre largo',
-            model='Este sería el nombre del modelo del segundo producto',
-            presentation='Este sería el nombre de la presentación del segundo producto',
+            product='Pan de muertos',
+            model='Chocolate',
+            presentation='Grande',
             price="200.00"
         ),
         dict(
@@ -62,7 +85,7 @@ def main():
             product='Producto X',
             model='Modelo Y',
             presentation='Presentación Z',
-            price="9000.00"
+            price="10000.00"
         )
     ]
     format_items(items, width)
@@ -73,23 +96,82 @@ def main():
         cambio="237.10",
         iva="0.00"
     )
-    len_total = 10
-    str_total = 'Total M.N $'
-    str_efectivo = 'Efectivo $'
-    str_cambio = 'Cambio $'
-    str_iva = '**Total de impuestos 16% $'
+    format_payment(payment)
 
-    t = format_line(str_total + ' ' + payment['total'], 40, ''.join([' ' for _ in range(width - len_total - len(str_total) + 1)]))
-    print(' '.join(t[0]))
-
-    str_total = ''.join([' ' for _ in range(width - len_total - len(str_total) + 1)]) + str_total + ' ' + payment['total']
-    print(str_total)
-    str_efectivo = ''.join([' ' for _ in range(width - len_total - len(str_efectivo) + 1)]) + str_efectivo + ' ' + payment['efectivo']
-    print(str_efectivo)
-    str_cambio = ''.join([' ' for _ in range(width - len_total - len(str_cambio) + 1)]) + str_cambio + ' ' + payment['cambio']
-    print(str_cambio)
-    str_iva = ''.join([' ' for _ in range(width - len_total - len(str_iva) + 1)]) + str_iva + ' ' + payment['iva']
-    print(str_iva)
+    order_data = dict(
+        id=123,
+        business_name='Cuca y Lupe',
+        business_rfc='1234567890ABC',
+        branch_name='Plaza Patria',
+        branch_id=1,
+        branch_address=dict(
+            street='Avenida Patria',
+            number='456',
+            suburb='Colonia las Américas',
+            cp=45234
+        ),
+        items=[
+            dict(
+                qty=3,
+                product='Tenis Jordán Piratas',
+                model='Negro',
+                presentation='27 cm',
+                price="1000.00"
+            ),
+            dict(
+                qty=2,
+                product='Pan de muertos',
+                model='Chocolate',
+                presentation='Grande',
+                price="200.00"
+            ),
+            dict(
+                qty=6,
+                product='Producto X',
+                model='Modelo Y',
+                presentation='Presentación Z',
+                price="10000.00"
+            )
+        ],
+        payment=dict(
+            total="262.34",
+            efectivo="500.00",
+            cambio="237.10",
+            iva="0.00"
+        ),
+        cashier_name='Victor Zamora',
+        date_and_time='12/12/2022 20:23',
+        footnote='¡Gracias por su compra!'
+    )
+    # Adjust Header
+    # Adjust Articles
+    # Adjust Payment
+    # Adjust Footer
 
 if __name__ == '__main__':
     main()
+
+
+"""
+Cuca y Lupe
+R.F.C. Meid345m3454
+Suc. Plaza Patria (01)
+Av.Patria 456
+Col las Américas C.P 45234
+--------------------------------
+Cant  Artículo          Total   
+1     Tenis Jordán Pira  1002.00
+      Negro, 27 cm
+1     Tenis Jordán Pira  1002.00
+      Negro, 27 cm 
+
+             Total M.N    262.34
+              Efectivo    500.00
+                Cambio    237.10
+
+**Total de impuestos 16%    0.00
+
+Le atendió: Victor Zamora
+28/07/2022 20:23 SUC. 01
+***Folio: 00000123***
+"""
