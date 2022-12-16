@@ -1,4 +1,4 @@
-def format_line(text, max_width, prefix='', suffix=''):
+def format_line(text, max_width, font_size=12, alignment='left', font_type='normal', prefix='', suffix=''):
     text = prefix + text + suffix
     char_count = -1
     words_list = list()
@@ -14,16 +14,11 @@ def format_line(text, max_width, prefix='', suffix=''):
         lines_list.append(words_list.copy())
 
     for i in range(len(lines_list)):
-        lines_list[i] = ' '.join(lines_list[i])        
+        lines_list[i] = dict(text=' '.join(lines_list[i]), size=font_size, align=alignment, style=font_type)
     return lines_list
 
-def format_items(items, width, str_cant, str_total, str_articulo):
-    # str_cant = 'Cant  '
-    # str_total = 'Total   '
-    # str_articulo = 'Artículo'
-    # str_articulo += ''.join([' ' for _ in range(width - (len(str_articulo)+len(str_cant)+len(str_total)))])
+def format_items(items, width, str_cant, str_total, str_articulo, font_size=12, alignment='left', font_type='normal'):
     lines_list = list()
-    # lines_list.append(str_cant + str_articulo + str_total)
     for item in items:
         line = str(item['qty']) + ''.join([' ' for _ in range(len(str_cant) - len(str(item['qty'])))])
         product = item['product']
@@ -31,19 +26,17 @@ def format_items(items, width, str_cant, str_total, str_articulo):
         presentation = item['presentation']
         line += product[:width - 1 - (len(str_cant)+len(str_total))]
         line += ''.join([' ' for _ in range((len(str_cant) + len(str_articulo)) - len(line) + len(str_total) - len(item['price']))]) + item['price']
-        lines_list.append(line)
+        lines_list.extend(format_line(line, width, font_size, alignment, font_type))
 
         # Modelo / Presentación
         len_articulo =  width - (len(str_cant)+len(str_total))
         model_presentation = model[0:(len_articulo - 1)//2] + ' ' + presentation[0:(len_articulo - 1)//2]
-        model_presentation_formatted = format_line(model_presentation, width, ''.join([' ' for _ in range(len(str_cant))]))
-        lines_list.append(model_presentation_formatted[0])
+        model_presentation_formatted = format_line(model_presentation, width, prefix=''.join([' ' for _ in range(len(str_cant))]))
+        lines_list.extend(model_presentation_formatted)
     
-    # for line in lines_list:
-    #     print(line)
     return lines_list
 
-def format_payment(payment, len_total):
+def format_payment(payment, len_total, width, font_size=12, alignment='right', font_type='normal'):
     str_total = 'Total M.N '
     str_efectivo = 'Efectivo '
     str_cambio = 'Cambio '
@@ -53,12 +46,19 @@ def format_payment(payment, len_total):
     str_efectivo = str_efectivo + ''.join([' ' for _ in range(len_total - len(payment['efectivo']))]) + payment['efectivo']
     str_cambio =  str_cambio + ''.join([' ' for _ in range(len_total - len(payment['cambio']))]) + payment['cambio']
     str_iva = str_iva + ''.join([' ' for _ in range(len_total - len(payment['iva']))]) + payment['iva']
-    return [str_total, str_efectivo, str_cambio, str_iva]
+
+    line_list = list()
+    line_list.extend(format_line(str_total, width, alignment=alignment))
+    line_list.extend(format_line(str_efectivo, width, alignment=alignment))
+    line_list.extend(format_line(str_cambio, width, alignment=alignment))
+    line_list.extend(format_line(str_iva, width, alignment=alignment))
+
+    return line_list
 
 def main():
     order_data = dict(
         id=123,
-        business_name='Cuca y Lupe',
+        business_name='Cuca y Lupe en colaboración con otra empresa',
         business_rfc='1234567890ABC',
         branch_name='Plaza Patria',
         branch_id=1,
@@ -101,31 +101,30 @@ def main():
         date_and_time='12/12/2022 20:23',
         footnote='¡Gracias por su compra!'
     )
-    WIDTH = 48
-    lines = list()
+    WIDTH = 32
+    line_list = list()
     # Adjust Header
-    lines.append(format_line(order_data['business_name'], WIDTH))
-    lines.append(format_line(order_data['business_rfc'], WIDTH, 'R.F.C '))
-    lines.append(format_line(f"{order_data['branch_name']} ({order_data['branch_id']})", WIDTH, 'Suc. '))
-    lines.append(format_line(f"{order_data['branch_address']['street']} {order_data['branch_address']['number']}", WIDTH))
-    lines.append(format_line(f"{order_data['branch_address']['suburb']} C.P. {order_data['branch_address']['cp']}", WIDTH))
-    lines.append([''.join(['-' for _ in range(WIDTH)])])
+    line_list.extend(format_line(order_data['business_name'], WIDTH, alignment='center', font_type='bold'))
+    line_list.extend(format_line(order_data['business_rfc'], WIDTH, prefix='R.F.C ', alignment='center'))
+    line_list.extend(format_line(f"{order_data['branch_name']} ({order_data['branch_id']})", WIDTH, prefix='Suc. ', alignment='center'))
+    line_list.extend(format_line(f"{order_data['branch_address']['street']} {order_data['branch_address']['number']}", WIDTH, alignment='center'))
+    line_list.extend(format_line(f"{order_data['branch_address']['suburb']} C.P. {order_data['branch_address']['cp']}", WIDTH, alignment='center'))
+    line_list.extend(format_line(''.join(['-' for _ in range(WIDTH)]), WIDTH))
     # Adjust Articles
     str_cantidad = 'Cant  '
     str_total = 'Total   '
     str_articulo = 'Artículo'.ljust(WIDTH-len(str_cantidad)-len(str_total), ' ')
-    lines.append([str_cantidad+str_articulo+str_total])
-    lines.append(format_items(order_data['items'], WIDTH, str_cantidad, str_total, str_articulo))
+    line_list.extend(format_line(str_cantidad+str_articulo+str_total, WIDTH))
+    line_list.extend(format_items(order_data['items'], WIDTH, str_cantidad, str_total, str_articulo))
     # Adjust Payment
-    lines.append(format_payment(order_data['payment'], len(str_total)))
+    line_list.extend(format_payment(order_data['payment'], len(str_total), WIDTH))
     # Adjust Footer
-    lines.append(format_line(order_data['cashier_name'], WIDTH, 'Le atendió: '))
-    lines.append([order_data['date_and_time'] + ' SUC. ' + str(order_data['branch_id'])])
-    lines.append(format_line(str(order_data['id']), WIDTH, '***Folio: ' + ''.join(['0' for _ in range(8 - len(str(order_data['id'])))]), '***'))
+    line_list.extend(format_line(order_data['cashier_name'], WIDTH, prefix='Le atendió: ', alignment='center'))
+    line_list.extend(format_line(order_data['date_and_time'] + ' SUC. ' + str(order_data['branch_id']), WIDTH, alignment='center'))
+    line_list.extend(format_line(str(order_data['id']), WIDTH, prefix='***Folio: ' + ''.join(['0' for _ in range(8 - len(str(order_data['id'])))]), suffix='***', alignment='center'))
 
-    for line in lines:
-        for l in line:
-            print(l)
+    for line in line_list:
+        print(line)
 
 if __name__ == '__main__':
     main()
